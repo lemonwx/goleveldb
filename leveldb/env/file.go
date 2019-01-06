@@ -1,6 +1,7 @@
 package env
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -36,10 +37,6 @@ func LockFile(file string) error {
 
 func FileExists(name string) bool {
 	return false
-}
-
-func NewSequentialFile(name string) {
-
 }
 
 func GetFileLockPid(fd uintptr) (int32, error) {
@@ -114,4 +111,33 @@ func NewWritableFile(name string) (*WritableFile, error) {
 		return nil, err
 	}
 	return &WritableFile{F: f}, nil
+}
+
+type SequentialFile struct {
+	F *os.File
+}
+
+func NewSequentialFile(name string) (*SequentialFile, error) {
+	f, err := os.OpenFile(name, os.O_RDONLY, 0644)
+	if err != nil {
+		log.Errorf("open file: %s failed: %v", name, err)
+		return nil, err
+	}
+	return &SequentialFile{F: f}, nil
+}
+
+func (f *SequentialFile) Read(size int, scratch []byte) ([]byte, error) {
+	if len(scratch) != size {
+		err := errors.New("unexpected read size not equal with lens of buffer")
+		log.Error(err)
+		return nil, err
+	}
+	n, err := f.F.Read(scratch)
+	if err != nil {
+		log.Errorf("read file: %s failed: %v", f.F.Name(), err)
+		return nil, err
+	}
+	result := make([]byte, n)
+	copy(result, scratch)
+	return result, nil
 }

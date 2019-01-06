@@ -11,7 +11,11 @@ type VersionSet struct {
 	dbname string
 }
 
-func (vs *VersionSet) Recovery(saveManifest bool) error {
+func NewVersionSet(name string) *VersionSet {
+	return &VersionSet{dbname: name}
+}
+
+func (vs *VersionSet) Recover(saveManifest bool) error {
 	current, err := env.ReadFileToString(CurrentFileName(vs.dbname))
 	if err != nil {
 		return err
@@ -22,6 +26,16 @@ func (vs *VersionSet) Recovery(saveManifest bool) error {
 	current = current[:len(current)-1]
 	dscname := vs.dbname + "/" + current
 	log.Debugf("dscname: %s", dscname)
+	f, err := env.NewSequentialFile(dscname)
+	if err != nil {
+		return err
+	}
+
+	reader := NewLogReader(f)
+	// todo: review reader.ReadRecord
+	record, err := reader.ReadRecord()
+	edit := NewVersionEdit()
+	edit.de
 	return nil
 }
 

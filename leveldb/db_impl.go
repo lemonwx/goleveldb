@@ -19,7 +19,7 @@ func NewDBImpl(name string, opt *Options) *DBImpl {
 	return &DBImpl{
 		opt:      opt,
 		dbName:   name,
-		versions: &VersionSet{dbname: name},
+		versions: NewVersionSet(name),
 	}
 }
 
@@ -31,7 +31,6 @@ func (db *DBImpl) NewDB() error {
 	ve.SetNextFile(2)
 	ve.SetLastSequence(0)
 	manifest := DescriptorFileName(db.dbName, 1)
-	log.Debug(manifest)
 	defer func() {
 		if err != nil {
 			env.DeleteFile(manifest)
@@ -76,7 +75,7 @@ func (db *DBImpl) Recover() error {
 		}
 		// todo: create if not exist base on options
 	}
-	if err := db.versions.Recovery(false); err != nil {
+	if err := db.versions.Recover(false); err != nil {
 		return err
 	}
 	return nil

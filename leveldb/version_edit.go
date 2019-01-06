@@ -55,6 +55,27 @@ type VersionEdit struct {
 	new_files_ []*fileMeta
 }
 
+func (ve *VersionEdit) Clear() {
+	ve.comparator_ = ve.comparator_[:0]
+	ve.log_number_ = 0
+	ve.prev_log_number_ = 0
+	ve.last_sequence_ = 0
+	ve.next_file_number_ = 0
+	ve.has_comparator_ = false
+	ve.has_log_number_ = false
+	ve.has_prev_log_number_ = false
+	ve.has_next_file_number_ = false
+	ve.has_last_sequence_ = false
+	ve.deleted_files_ = map[int]uint64{}
+	ve.new_files_ = ve.new_files_[:0]
+}
+
+func NewVersionEdit() *VersionEdit {
+	ve := &VersionEdit{}
+	ve.Clear()
+	return ve
+}
+
 func (ve *VersionEdit) Encode() []byte {
 	dst := []byte{}
 	if ve.has_comparator_ {

@@ -2,8 +2,6 @@ package leveldb
 
 import (
 	"encoding/binary"
-	"io"
-	"os"
 
 	"github.com/golang/leveldb/crc"
 	"github.com/lemonwx/goleveldb/leveldb/env"
@@ -23,6 +21,8 @@ const (
 	kMiddleType    = 3
 	kLastType      = 4
 	kMaxRecordType = kLastType
+	kEof           = kMaxRecordType + 1
+	kBadRecord     = kMaxRecordType + 2
 )
 
 type LogWriter struct {
@@ -82,6 +82,5 @@ func (w *LogWriter) EmitPhysicalRecord(Type int, record []byte, n int) error {
 	binary.LittleEndian.PutUint32(buf[:4], CRC)
 	w.dest_.F.Write(buf)
 	w.dest_.F.Sync()
-	io.Copy(os.Stdin, os.Stdout)
 	return nil
 }
