@@ -154,6 +154,7 @@ func (vs *VersionSet) LogAndApply(edit *VersionEdit, mu sync.Mutex) error {
 	} else {
 		edit.SetLogNumber(vs.log_number_)
 	}
+	log.Debug(edit.log_number_)
 	if !edit.has_prev_log_number_ {
 		edit.SetPrevLogNumber(vs.prev_log_number_)
 	}
@@ -233,6 +234,19 @@ func (vs *VersionSet) AddLiveFiles() map[uint64]struct{} {
 		}
 	}
 	return live
+}
+
+func (vs *VersionSet) AddLiveFilesToList() []uint64 {
+	ret := []uint64{}
+	for v := vs.dummy_versions_.next_; v != vs.dummy_versions_; v = v.next_ {
+		for level := 0; level < levelNum; level += 1 {
+			f := v.files_[level]
+			for _, f := range f {
+				ret = append(ret, f.number)
+			}
+		}
+	}
+	return ret
 }
 
 func (vs *VersionSet) AppendVersion(v *Version) {
@@ -429,12 +443,17 @@ func (vs *VersionSet) MaxBytesForLevel(level int) float64 {
 	return result
 }
 
+func (vs *VersionSet) NeedsCompaction() bool {
+	v := vs.current_
+	return (v.compaction_score_ >= 1) || (v.file_to_compact_ != nil)
+}
+
 type Version struct {
 	vset_                 *VersionSet
 	next_                 *Version
 	prev_                 *Version
 	refs_                 int
-	file_to_compact_      int
+	file_to_compact_      *FileMetaData
 	file_to_compact_level int
 	compaction_score_     float64
 	compaction_level_     int
@@ -446,7 +465,7 @@ func NewVersion(vs *VersionSet) *Version {
 	v.next_ = v
 	v.prev_ = v
 	v.refs_ = 0
-	v.file_to_compact_ = -1
+	v.file_to_compact_ = nil
 	v.file_to_compact_level = -1
 	v.compaction_score_ = -1
 	v.compaction_level_ = -1

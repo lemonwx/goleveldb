@@ -36,6 +36,7 @@ func NewLogWriter(dest_ *env.WritableFile) *LogWriter {
 }
 
 func (w *LogWriter) AddRecord(record []byte) error {
+	log.Debug(len(record), record)
 	left := len(record)
 	begin := true
 	for left > 0 {
@@ -84,6 +85,8 @@ func (w *LogWriter) EmitPhysicalRecord(Type int, record []byte, n int) error {
 	buf = append(buf, record...)
 	CRC := crc.New(buf[6:]).Value()
 	binary.LittleEndian.PutUint32(buf[:4], CRC)
+	log.Debug(buf[:kHeaderSize])
+	log.Debug(buf[kHeaderSize:])
 	w.dest_.F.Write(buf)
 	w.dest_.F.Sync()
 	return nil

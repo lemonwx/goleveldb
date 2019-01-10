@@ -12,7 +12,7 @@ def listdir(pwd, kw):
         if os.path.isdir(pwd + "/" + f):
             listdir(pwd + "/"  + f, kw)
         else:
-            cmd = "grep --color -l \"{0}\" {1}/{2}".format(kw, pwd, f)
+            cmd = "grep --color -lsin \"{0}\" {1}/{2}".format(kw, pwd, f)
             subprocess.call(cmd, shell=True)
 
 

@@ -12,6 +12,9 @@ import (
 
 func my() {
 	db, err := mylevel.Open("testdb", &mylevel.Options{CreateIfMissing: true, Comparator: &utils.InternalKeyComparator{}})
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Debug(db, err)
 }
 

@@ -80,6 +80,30 @@ func NewVersionEdit() *VersionEdit {
 	return ve
 }
 
+func (ve *VersionEdit) print() {
+	log.Debug("print start")
+	log.Debug(ve.has_comparator_)
+	log.Debug(ve.comparator_)
+
+	log.Debug(ve.has_log_number_)
+	log.Debug(ve.log_number_)
+
+	log.Debug(ve.has_prev_log_number_)
+	log.Debug(ve.prev_log_number_)
+
+	log.Debug(ve.has_next_file_number_)
+	log.Debug(ve.next_file_number_)
+
+	log.Debug(ve.has_last_sequence_)
+	log.Debug(ve.last_sequence_)
+
+	log.Debug(len(ve.compact_pointers_))
+	log.Debug(len(ve.deleted_files_))
+	log.Debug(len(ve.new_files_))
+
+	log.Debug("print end")
+}
+
 func (ve *VersionEdit) Encode() []byte {
 	dst := []byte{}
 	if ve.has_comparator_ {
