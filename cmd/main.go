@@ -3,9 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/golang/leveldb/crc"
-
 	"github.com/golang/leveldb"
+	"github.com/golang/leveldb/crc"
 	mylevel "github.com/lemonwx/goleveldb/leveldb"
 	"github.com/lemonwx/goleveldb/leveldb/utils"
 	"github.com/lemonwx/log"
