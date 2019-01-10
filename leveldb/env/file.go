@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/lemonwx/log"
@@ -113,6 +114,10 @@ func NewWritableFile(name string) (*WritableFile, error) {
 	return &WritableFile{F: f}, nil
 }
 
+func (wf *WritableFile) Write(b []byte) (int, error) {
+	return wf.F.Write(b)
+}
+
 type SequentialFile struct {
 	F *os.File
 }
@@ -140,4 +145,109 @@ func (f *SequentialFile) Read(size int, scratch []byte) ([]byte, error) {
 	result := make([]byte, n)
 	copy(result, scratch)
 	return result, nil
+}
+
+type FileType int
+
+const (
+	KLogFile FileType = iota
+	KDBLockFile
+	KTableFile
+	KDescriptorFile
+	KCurrentFile
+	KTempFile
+	KInfoLogFile // Either the current one, or an old one
+)
+
+func ParseFileName(filename string) (uint64, FileType, int, error) {
+	preLen := len(filename)
+	number := uint64(0)
+	var Type FileType
+	switch filename {
+	case "CURRENT":
+		number = 0
+		Type = KCurrentFile
+	case "LOCK":
+		number = 0
+		Type = KDBLockFile
+	case "LOG", "LOG.old":
+		number = 0
+		Type = KInfoLogFile
+	default:
+		if strings.HasPrefix(filename, "MANIFEST-") {
+			filename = strings.TrimLeft(filename, "MANIFEST-")
+			num, l, err := ConsumeDecimalNumber([]byte(filename))
+			if err != nil {
+				return 0, 0, 0, err
+			}
+			filename = filename[l:]
+			if len(filename) != 0 {
+				return 0, 0, 0, errors.New("unexpected")
+			}
+			Type = KDescriptorFile
+			number = num
+		} else {
+			num, l, err := ConsumeDecimalNumber([]byte(filename))
+			if err != nil {
+				return 0, 0, 0, err
+			}
+			filename = filename[l:]
+			if filename == ".log" {
+				Type = KLogFile
+			} else if filename == ".sst" || filename == ".ldb" {
+				Type = KTableFile
+			} else if filename == ".dbtmp" {
+				Type = KTempFile
+			} else {
+				return 0, 0, 0, errors.New("unexpected")
+			}
+			number = num
+		}
+	}
+	return number, Type, preLen - len(filename), nil
+}
+
+func GetFileSize(filename string) (int, error) {
+	return 0, nil
+}
+func NewAppendableFile(filename string) (*WritableFile, error) {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return &WritableFile{F: f}, nil
+}
+
+func ConsumeDecimalNumber(in []byte) (uint64, int, error) {
+	kMaxUint64 := uint64(1<<64 - 1)
+	kLastDigitOfMaxUint64 := byte('0' + kMaxUint64%10)
+	value := uint64(0)
+	idx := 0
+	for ; idx < len(in); idx += 1 {
+		v := in[idx]
+		if v < '0' || v > '9' {
+			break
+		}
+		if value > kMaxUint64/10 || value == kMaxUint64/10 && v > kLastDigitOfMaxUint64 {
+			return 0, 0, errors.New("unexpectd")
+		}
+		value = (value * 10) + uint64(v-'0')
+	}
+	digist_consumed := idx
+	if digist_consumed == 0 {
+		return 0, 0, errors.New("unexpectd")
+	}
+	return value, digist_consumed, nil
+}
+
+func GetChildren(dirName string) ([]string, error) {
+	infos, err := ioutil.ReadDir(dirName)
+	if err != nil {
+		return nil, err
+	}
+	rets := make([]string, 0, len(infos))
+	for _, info := range infos {
+		rets = append(rets, info.Name())
+	}
+	return rets, nil
 }

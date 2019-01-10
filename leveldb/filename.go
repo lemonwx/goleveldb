@@ -40,3 +40,16 @@ func SetCurrentFile(dbname string, descNum uint64) error {
 	}
 	return nil
 }
+
+func InfoLogFileName(dbname string) string {
+	return dbname + "/LOG"
+}
+
+// Return the name of the old info log file for "dbname".
+func OldInfoLogFileName(dbname string) string {
+	return dbname + "/LOG.old"
+}
+
+func LogFileName(dbname string, logNum uint64) string {
+	return MakeFileName(dbname, logNum, "log")
+}

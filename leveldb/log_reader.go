@@ -105,7 +105,7 @@ func (lr *LogReader) ReadRecord() ([]byte, error) {
 			if in_fragmented_record {
 				scratch = scratch[:0]
 			}
-			// todo: return false
+			return nil, errors.New("eof")
 		case kBadRecord:
 			if in_fragmented_record {
 				lr.ReportCorruption(len(scratch), "error in middle of record")
@@ -190,6 +190,7 @@ func (lr *LogReader) ReadPhysicalRecord() ([]byte, int) {
 		if lr.end_of_buffer_offset_-uint64(len(lr.buffer_))-uint64(kHeaderSize)-uint64(length) < lr.initial_offset_ {
 			return nil, kBadRecord
 		}
+		log.Debug(length)
 		result := make([]byte, length)
 		copy(result, header[kHeaderSize:])
 		return result, int(Type)

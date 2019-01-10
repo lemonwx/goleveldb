@@ -31,6 +31,10 @@ type LogWriter struct {
 	type_crc      []uint32
 }
 
+func NewLogWriter(dest_ *env.WritableFile) *LogWriter {
+	return &LogWriter{dest_: dest_}
+}
+
 func (w *LogWriter) AddRecord(record []byte) error {
 	left := len(record)
 	begin := true

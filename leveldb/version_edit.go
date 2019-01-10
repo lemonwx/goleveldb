@@ -1,7 +1,11 @@
 package leveldb
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/lemonwx/goleveldb/leveldb/utils"
+	"github.com/lemonwx/log"
 )
 
 const (
@@ -20,16 +24,16 @@ type SequenceNumber uint64
 
 type compatPointer struct {
 	level uint32
-	key   InternalKey
+	key   *InternalKey
 }
 
 type FileMetaData struct {
 	refs          int
 	allowed_seeks int // Seeks allowed until compaction
 	number        uint64
-	file_size     uint64      // File size in bytes
-	smallest      InternalKey // Smallest internal key served by table
-	largest       InternalKey // Largest internal key served by table
+	file_size     uint64       // File size in bytes
+	smallest      *InternalKey // Smallest internal key served by table
+	largest       *InternalKey // Largest internal key served by table
 
 }
 
@@ -137,4 +141,79 @@ func (ve *VersionEdit) SetNextFile(num uint64) {
 func (ve *VersionEdit) SetLastSequence(seq SequenceNumber) {
 	ve.has_last_sequence_ = true
 	ve.last_sequence_ = seq
+}
+
+func (ve *VersionEdit) DecodeFrom(src []byte) error {
+	for {
+		tag, l, err := utils.GetVarInt32(src)
+		if err != nil {
+			if len(src) == 0 {
+				return nil
+			}
+			return err
+		}
+		src = src[l:]
+		log.Debug(tag, src)
+		switch tag {
+		case kComparator:
+			ret, l, err := utils.GetLengthPrefixedString(src)
+			if err != nil {
+				log.Errorf("comparator name")
+				return err
+			} else {
+				src = src[l:]
+				ve.comparator_ = string(ret)
+				ve.has_comparator_ = true
+			}
+		case kLogNumber:
+			t, l, err := utils.GetVarInt64(src)
+			if err != nil {
+				return err
+			}
+			src = src[l:]
+			log.Debug(t, src, l)
+			ve.log_number_ = t
+			ve.has_log_number_ = true
+		case kNextFileNumber:
+			t, l, err := utils.GetVarInt64(src)
+			if err != nil {
+				return err
+			}
+			src = src[l:]
+			ve.next_file_number_ = t
+			ve.has_next_file_number_ = true
+		case kLastSequence:
+			t, l, err := utils.GetVarInt64(src)
+			if err != nil {
+				return err
+			}
+			src = src[l:]
+			ve.last_sequence_ = SequenceNumber(t)
+			ve.has_last_sequence_ = true
+		default:
+			err := errors.New(fmt.Sprintf("unknown tag"))
+			log.Error(err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (ve *VersionEdit) SetPrevLogNumber(num uint64) {
+	ve.prev_log_number_ = num
+	ve.has_prev_log_number_ = true
+}
+
+func (ve *VersionEdit) SetComparatorPointer(level int, k *InternalKey) {
+	ve.compact_pointers_ = append(ve.compact_pointers_, &compatPointer{level: uint32(level), key: k})
+}
+
+func (ve *VersionEdit) AddFile(level int, file uint64, file_sz uint64, smallest *InternalKey, largest *InternalKey) {
+	f := &FileMetaData{
+		number:    file,
+		file_size: file_sz,
+		smallest:  smallest,
+		largest:   largest,
+	}
+	ve.new_files_ = append(ve.new_files_, &fileMeta{k: level, f: f})
 }

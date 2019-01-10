@@ -27,3 +27,6 @@ func (ikc *InternalKeyComparator) FindShortestSeparator(start string, limit stri
 func (ikc *InternalKeyComparator) FindShortSuccessor(key string) {
 
 }
+func (ikc *InternalKeyComparator) User_comparator() Comparator {
+	return ikc
+}

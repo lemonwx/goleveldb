@@ -29,9 +29,15 @@ func main() {
 
 	x := []byte{1, 1, 26, 108, 101, 118, 101, 108, 100, 98, 46, 66, 121, 116, 101, 119, 105, 115, 101, 67, 111, 109, 112, 97, 114, 97, 116, 111, 114, 2, 0, 3, 2, 4, 0}
 	log.Debug(crc.New(x), crc.New(x).Value())
-
-	xx := -977699691
-	xxx := 160244252081149
-	log.Debug(uint32(xx))
-	log.Debug(uint32(xxx))
+	/*
+		var v uint64
+		for idx := uint64(0); idx <= 64; idx += 1 {
+			v = 1 << idx
+			if idx == 32 {
+				v = (1 << idx) - 1
+			}
+			bs := utils.EncodeVarint64(v)
+			vv, _, err := utils.GetVarInt64(bs)
+			log.Debug(err, idx, v, vv, v == vv)
+		}*/
 }
